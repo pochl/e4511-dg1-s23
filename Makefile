@@ -18,7 +18,7 @@ lint:
 	poetry run pylint src tests
 
 mypy:
-	poetry run mypy srcc
+	poetry run mypy src
 
 check: lint mypy
 	poetry run isort --check src tests
