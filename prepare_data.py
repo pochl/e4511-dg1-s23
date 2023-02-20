@@ -1,15 +1,8 @@
-import json
-import os
-import shutil
-
 import pandas as pd
 from transformers import AutoTokenizer
 from src.preprocessing.preparer import Preparer
 
 
-max_length = 512
-stride = 128
-min_answer_length = 100
 model_name = "roberta-base"
 data_path = 'resources/data/cuad/train_separate_questions.json'
 

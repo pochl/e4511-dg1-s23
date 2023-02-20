@@ -5,6 +5,9 @@ from transformers import AdamW, AutoModelForQuestionAnswering
 
 from src.preprocessing.dataset import Dataset
 
+# ------------------------------------------------------------------------
+# Config
+# ------------------------------------------------------------------------
 tokenized_dir = "resources/tokenized_data/roberta-base"
 max_length = 512
 stride = 128
@@ -16,9 +19,9 @@ selected_questions = [
     "No-Solicit Of Employees",
     "Non-Compete",
 ]
+# ------------------------------------------------------------------------
 
 model_dir = f"resources/models/{model_name}"
-
 
 train_dataset = Dataset(
     tokenized_dir,
