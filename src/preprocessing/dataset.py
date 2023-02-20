@@ -1,6 +1,5 @@
 import os
-import pickle
-from typing import List, Optional
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -12,15 +11,29 @@ from src.preprocessing.utils import calculate_overlap, resample
 
 
 class Dataset(torch.utils.data.Dataset):
+    """Dataset class."""
+
     def __init__(
         self,
         tokenized_dir: str,
-        max_length,
-        stride,
-        min_answer_length,
+        max_length: int,
+        stride: int,
+        min_answer_length: int,
         save_to_memory: bool = True,
         selected_questions: Optional[List[str]] = None,
     ):
+        """Init.
+
+        Args:
+            tokenized_dir (str): Directory to tokenized data (from Preparer).
+            max_length (int): Maximum length of each sample (Check Hugging Face's Tokenizer class for more detail).
+            stride (int): Stride length (Check Hugging Face's Tokenizer class for more detail).
+            min_answer_length (int): Minimum answer length to consider including that answer.
+            save_to_memory (bool, optional): Whether to save the whole data to memory or not. Defaults to True.
+            selected_questions (Optional[List[str]], optional): Selected questions. 
+                If not provided, will be sampling from all questions.
+                Defaults to None.
+        """
 
         self.tokenized_dir = tokenized_dir
         self.max_length = max_length
@@ -62,14 +75,22 @@ class Dataset(torch.utils.data.Dataset):
 
         subsample_spans = self.generate_subsamples_span()
         self.subsample_spans = resample(
-            subsample_spans, subsample_spans.answer_end != 0
+            subsample_spans, subsample_spans.answer_end > 0
         )
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> dict:
+        """Gets sample.
+
+        Args:
+            idx (int): Index of sample.
+
+        Returns:
+            dict: Sample.
+        """
 
         instance = self.subsample_spans.iloc[idx, :]
-        question = self._get_content(instance["question_id"], instance_type="question")
-        context = self._get_content(instance["context_id"], instance_type="context")
+        question = self._get_instance(instance["question_id"], instance_type="question")
+        context = self._get_instance(instance["context_id"], instance_type="context")
 
         subcontext = {
             k: context[k][instance["subcontext_start"] : instance["subcontext_end"] + 1]
@@ -88,10 +109,27 @@ class Dataset(torch.utils.data.Dataset):
 
         return {key: torch.tensor(val) for key, val in subsample.items()}
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Returns total number of samples.
+
+        Returns:
+            int: Total number of samples.
+        """
         return len(self.subsample_spans)
 
-    def generate_subsample_span(self, question, context, answer_span):
+    def generate_subsample_span(
+        self, question: dict, context: dict, answer_span: Tuple[int, int]
+    ) -> pd.DataFrame:
+        """Generates sample span.
+
+        Args:
+            question (dict): Dictionary containing information of the question.
+            context (dict): Dictionary containing information of the context.
+            answer_span (Tuple[int, int]): (start_position, end_position).
+
+        Returns:
+            pd.DataFrame: Sample span
+        """
 
         len_question = len(question["input_ids"])
         len_context = len(context["input_ids"])
@@ -122,7 +160,7 @@ class Dataset(torch.utils.data.Dataset):
             else [0, 0]
             for context_start, context_end in subcontext_spans
         ]
-        answers_shifted = np.array(answers_shifted)
+        # answers_shifted = np.array(answers_shifted)
 
         return pd.DataFrame(
             np.concatenate([subcontext_spans, answers_shifted], axis=1),
@@ -134,7 +172,12 @@ class Dataset(torch.utils.data.Dataset):
             ],
         )
 
-    def generate_subsamples_span(self):
+    def generate_subsamples_span(self) -> pd.DataFrame:
+        """Combines generated samples into 1 dataframe.
+
+        Returns:
+            pd.DataFrame: Combined samples.
+        """
 
         subsample_spans = []
         for _, (question_id, context_id, ans_start, ans_end) in tqdm(
@@ -142,8 +185,8 @@ class Dataset(torch.utils.data.Dataset):
             total=len(self.answers_span),
             desc="generating sub-samples spans",
         ):
-            context = self._get_content(context_id, instance_type="context")
-            question = self._get_content(question_id, instance_type="question")
+            context = self._get_instance(context_id, instance_type="context")
+            question = self._get_instance(question_id, instance_type="question")
 
             subsample_span = self.generate_subsample_span(
                 question, context, (ans_start, ans_end)
@@ -155,9 +198,18 @@ class Dataset(torch.utils.data.Dataset):
 
         return pd.concat(subsample_spans).reset_index(drop=True)
 
-    def combine_qc(self, question, context):
+    def combine_qc(self, question: dict, context: dict) -> dict:
+        """Combines a question and a context into 1 content with seperators.
 
-        result = {k: [] for k in context.keys()}
+        Args:
+            question (dict): Dictionary containing information of the question.
+            context (dict): Dictionary containing information of the context.
+
+        Returns:
+            dict: Content.
+        """
+
+        result: dict = {k: [] for k in context.keys()}
         content = [question, context]
 
         for sep in self.tokenizer_info["seperators"]:
@@ -176,10 +228,24 @@ class Dataset(torch.utils.data.Dataset):
 
         return result
 
-    def _get_content(self, id, instance_type: str):
+    def _get_instance(self, idenifier: Union[int, str], instance_type: str) -> dict:
+        """Gets instance.
+
+        Args:
+            id (Union[int, str]): Instance ID.
+            instance_type (str): Instance type. Either "question" or "context".
+
+        Returns:
+            dict: Instance.
+        """
+
+        assert instance_type in (
+            "question",
+            "context",
+        ), 'instance_type must be either "question" or "context".'
 
         return (
-            self.content[instance_type][id]
-            if self.save_to_memory
-            else read_pickle(f"{self.tokenized_dir}/{instance_type}/{id}.pickle")
+            self.content[instance_type][idenifier]
+            if self.content
+            else read_pickle(f"{self.tokenized_dir}/{instance_type}/{idenifier}.pickle")
         )

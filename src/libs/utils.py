@@ -2,32 +2,58 @@ import json
 import pickle
 from pathlib import Path
 
-import pandas as pd
 
+def read_json(path: str) -> dict:
+    """Reads json file to dictionary.
 
-def read_json(path: str):
+    Args:
+        path (str): Path to json file.
 
-    with open(Path(path), "rb") as f:
-        out = json.load(f)
+    Returns:
+        dict: output dictionary.
+    """
 
-    return out
-
-
-def save_json(data, path: str):
-
-    with open(path, "w") as f:
-        json.dump(data, f)
-
-
-def read_pickle(path: str):
-
-    with open(path, "rb") as f:
-        out = pickle.load(f)
+    with open(Path(path), "rb") as file:
+        out = json.load(file)
 
     return out
 
 
-def save_pickle(data, path: str):
+def save_json(data: dict, path: str):
+    """Saves dictionary bject to json file.
 
-    with open(path, "wb") as f:
-        pickle.dump(data, f)
+    Args:
+        data (dict): dictionary to be saved.
+        path (str): Destination path.
+    """
+
+    with open(path, "w", encoding="utf-8") as file:
+        json.dump(data, file)
+
+
+def read_pickle(path: str) -> dict:
+    """Reads pickle file.
+
+    Args:
+        path (str): Path to pickle file.
+
+    Returns:
+        dict: Output object.
+    """
+
+    with open(path, "rb") as file:
+        out = pickle.load(file)
+
+    return out
+
+
+def save_pickle(data: object, path: str):
+    """Save object to pickle file.
+
+    Args:
+        data (object): Object to be saved.
+        path (str): Destination path.
+    """
+
+    with open(path, "wb") as file:
+        pickle.dump(data, file)

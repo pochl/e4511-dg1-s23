@@ -1,11 +1,19 @@
-from typing import List
+from typing import List, Tuple
 
 import pandas as pd
 
 from src.libs.utils import read_json
 
 
-def read_squad(path: str):
+def read_squad(path: str) -> pd.DataFrame:
+    """Read dataset in SQuAD format.
+
+    Args:
+        path (str): Path to dataset.
+
+    Returns:
+        pd.DataFrame: Dataset.
+    """
 
     squad_dict = read_json(path)
 
@@ -18,10 +26,12 @@ def read_squad(path: str):
         title = group["title"]
         for passage in group["paragraphs"]:
             context = passage["context"]
-            for qa in passage["qas"]:
-                question = qa["question"]
-                question_id = qa["id"].split("__")[-1].split("_")[0].replace("/", "-")
-                for answer in qa["answers"]:
+            for ques_ans in passage["qas"]:
+                question = ques_ans["question"]
+                question_id = (
+                    ques_ans["id"].split("__")[-1].split("_")[0].replace("/", "-")
+                )
+                for answer in ques_ans["answers"]:
                     titles.append(title)
                     questions_id.append(question_id)
                     contexts.append(context)
@@ -39,7 +49,18 @@ def read_squad(path: str):
     )
 
 
-def get_answer_span(context, answer):
+def get_answer_span(context: dict, answer: dict) -> Tuple[int, int]:
+    """Generate answer span, which is the indexes of start and end tokens (inclusive) in the context.
+
+    Args:
+        context (dict): Dictionary containing tokenized information of the context, with the following keys:
+            "input_ids", "attention_mask", "offset_mapping", "sequence_ids". This dictionary is processed from
+            Hugging Face's tokenizer object.
+        answer (dict): Dictionary containing information of the answer in SQuAD format.
+
+    Returns:
+        Tuple[int, int]: (start_position, end_position index)
+    """
 
     offset = context["offset_mapping"]
 
@@ -62,11 +83,34 @@ def get_answer_span(context, answer):
     return start_position, end_position
 
 
-def calculate_overlap(x_start, x_end, y_start, y_end):
+def calculate_overlap(x_start: int, x_end: int, y_start: int, y_end: int) -> int:
+    """Calculates overlapping span between 2 spans (x, y). For example, if x's span is (5, 15), and
+    y's span is (9, 20), the the overlapping span is 7.
+
+    Args:
+        x_start (int): Start position of span x.
+        x_end (int): Ens position of span x.
+        y_start (int): Start position of span y.
+        y_end (int): End position of span y.
+
+    Returns:
+        int: Overlaping span.
+    """
+
     return max(0, min(x_end, y_end) - max(x_start, y_start))
 
 
-def resample(data: pd.DataFrame, contain_answer: List[bool]):
+def resample(data: pd.DataFrame, contain_answer: pd.Series) -> pd.DataFrame:
+    """Resample data such that the numbers of positive samples (the sample contain the answer to the question), and
+    negative samples (the sample does not contain the answer to the question), are equal.
+
+    Args:
+        data (pd.DataFrame): Data to be sample
+        contain_answer (pd.Series): Whether each sample contains the answer or not.
+
+    Returns:
+        pd.DataFrame: Resampled data.
+    """
 
     negative = data[~contain_answer].sample(sum(contain_answer), random_state=2023)
     positive = data[contain_answer]
