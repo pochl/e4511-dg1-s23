@@ -10,28 +10,21 @@ help:
 	@echo "clean-test - remove test and coverage artifacts"
 
 format:
-#	poetry run isort src tests
-#	poetry run black src tests
-	isort src tests
-	black src tests
+	isort src tests train.py
+	black src tests train.py
 
 lint:
 	mkdir -p reports
-#	poetry run pylint src tests
 	pylint src tests
 
 mypy:
-#	poetry run mypy src
 	mypy src
 
 check: lint mypy
-#	poetry run isort --check src tests
-#	poetry run black --check src tests
 	isort --check src tests
 	black --check src tests
 
 pytest:
-#	poetry run pytest
 	pytest
 
 test: format lint mypy pytest
