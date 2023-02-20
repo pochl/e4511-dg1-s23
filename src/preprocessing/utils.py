@@ -1,7 +1,8 @@
+from typing import List
+
 import pandas as pd
 
 from src.libs.utils import read_json
-from typing import List
 
 
 def read_squad(path: str):

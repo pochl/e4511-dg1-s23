@@ -19,7 +19,7 @@ class Dataset(torch.utils.data.Dataset):
         stride,
         min_answer_length,
         save_to_memory: bool = True,
-        selected_questions: Optional[List[str]] = None
+        selected_questions: Optional[List[str]] = None,
     ):
 
         self.tokenized_dir = tokenized_dir
@@ -48,7 +48,9 @@ class Dataset(torch.utils.data.Dataset):
         self.answers_span = pd.read_csv(f"{tokenized_dir}/answers_span.csv")
 
         if selected_questions:
-            self.answers_span = self.answers_span[self.answers_span.question_id.isin(selected_questions)]
+            self.answers_span = self.answers_span[
+                self.answers_span.question_id.isin(selected_questions)
+            ]
             questions = {k: v for k, v in questions.items() if k in selected_questions}
 
         context_start = len(self.tokenizer_info["seperators"]) - (
@@ -59,7 +61,9 @@ class Dataset(torch.utils.data.Dataset):
         )
 
         subsample_spans = self.generate_subsamples_span()
-        self.subsample_spans = resample(subsample_spans, subsample_spans.answer_end != 0)
+        self.subsample_spans = resample(
+            subsample_spans, subsample_spans.answer_end != 0
+        )
 
     def __getitem__(self, idx):
 
@@ -179,4 +183,3 @@ class Dataset(torch.utils.data.Dataset):
             if self.save_to_memory
             else read_pickle(f"{self.tokenized_dir}/{instance_type}/{id}.pickle")
         )
-
