@@ -55,3 +55,6 @@ python train.py
 ```
 
 Training configuration can be changed within the file.
+
+
+## Key Points on How The Pipeline Works

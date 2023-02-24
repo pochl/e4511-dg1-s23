@@ -1,4 +1,3 @@
-import pandas as pd
 from transformers import AutoTokenizer
 from src.preprocessing.preparer import Preparer
 

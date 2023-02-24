@@ -1,0 +1,13 @@
+model: roberta-base
+max_length: 512
+stride: 128
+min_answer_length: 100
+selected_questions:
+  - Cap On Liability
+  - Governing Law
+  - No-Solicit Of Employees
+  - Non-Compete
+
+batch_size: 1
+learning_rate: 5.0e-5
+epochs: 3

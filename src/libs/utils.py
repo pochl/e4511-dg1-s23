@@ -2,6 +2,8 @@ import json
 import pickle
 from pathlib import Path
 
+import yaml
+
 
 def read_json(path: str) -> dict:
     """Reads json file to dictionary.
@@ -57,3 +59,19 @@ def save_pickle(data: object, path: str):
 
     with open(path, "wb") as file:
         pickle.dump(data, file)
+
+
+def read_yaml(path: str) -> dict:
+    """Reads yaml file.
+
+    Args:
+        path (str): Path to yaml file.
+
+    Returns:
+        dict: Output dict.
+    """
+
+    with open(path, "r", encoding="utf-8") as file:
+        data = yaml.safe_load(file)
+
+    return data

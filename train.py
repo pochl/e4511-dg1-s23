@@ -1,69 +1,29 @@
-import torch
-from torch.utils.data import DataLoader
-from tqdm import tqdm
 from transformers import AdamW, AutoModelForQuestionAnswering
 
+from src.libs.utils import read_yaml
 from src.preprocessing.dataset import Dataset
+from src.training.trainer import Trainer
 
-# ------------------------------------------------------------------------
-# Config
-# ------------------------------------------------------------------------
-tokenized_dir = "resources/tokenized_data/roberta-base"
-max_length = 512
-stride = 128
-min_answer_length = 100
-model_name = "roberta-base"
-selected_questions = [
-    "Cap On Liability",
-    "Governing Law",
-    "No-Solicit Of Employees",
-    "Non-Compete",
-]
-# ------------------------------------------------------------------------
+config = read_yaml("configs/config.yaml")
 
-model_dir = f"resources/models/{model_name}"
+model_dir = f"resources/models/{config['model']}"
+tokenized_dir = f"resources/tokenized_data/{config['model']}"
 
 train_dataset = Dataset(
     tokenized_dir,
-    max_length,
-    stride,
-    min_answer_length,
-    selected_questions=selected_questions,
+    config["max_length"],
+    config["stride"],
+    config["min_answer_length"],
+    selected_questions=config["selected_questions"],
 )
 model = AutoModelForQuestionAnswering.from_pretrained(model_dir)
 
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
-    device = torch.device("mps")
-else:
-    device = torch.device("cpu")
+trainer = Trainer(
+    model=model,
+    optimizer=AdamW,
+    batch_size=config["batch_size"],
+    learning_rate=config["learning_rate"],
+    epochs=config["epochs"],
+)
 
-
-model.to(device)
-model.train()
-
-train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
-
-optim = AdamW(model.parameters(), lr=5e-5)
-
-for epoch in range(3):
-    for batch in tqdm(
-        train_loader, total=train_loader.__len__(), desc=f"epoch {epoch}"
-    ):
-        optim.zero_grad()
-        input_ids = batch["input_ids"].to(device)
-        attention_mask = batch["attention_mask"].to(device)
-        start_positions = batch["start_positions"].to(device)
-        end_positions = batch["end_positions"].to(device)
-        outputs = model(
-            input_ids,
-            attention_mask=attention_mask,
-            start_positions=start_positions,
-            end_positions=end_positions,
-        )
-        loss = outputs[0]
-        loss.backward()
-        optim.step()
-
-model.eval()
+trainer.train(train_dataset)

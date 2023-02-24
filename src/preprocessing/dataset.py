@@ -30,7 +30,7 @@ class Dataset(torch.utils.data.Dataset):
             stride (int): Stride length (Check Hugging Face's Tokenizer class for more detail).
             min_answer_length (int): Minimum answer length to consider including that answer.
             save_to_memory (bool, optional): Whether to save the whole data to memory or not. Defaults to True.
-            selected_questions (Optional[List[str]], optional): Selected questions. 
+            selected_questions (Optional[List[str]], optional): Selected questions.
                 If not provided, will be sampling from all questions.
                 Defaults to None.
         """
@@ -74,9 +74,7 @@ class Dataset(torch.utils.data.Dataset):
         )
 
         subsample_spans = self.generate_subsamples_span()
-        self.subsample_spans = resample(
-            subsample_spans, subsample_spans.answer_end > 0
-        )
+        self.subsample_spans = resample(subsample_spans, subsample_spans.answer_end > 0)
 
     def __getitem__(self, idx: int) -> dict:
         """Gets sample.
